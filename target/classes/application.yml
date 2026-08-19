@@ -1,0 +1,37 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:cropdryer;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+cropdryer:
+  cors:
+    allowed-origins: "http://localhost:3000,http://localhost:5173"
+  api:
+    key: ""
+  sms:
+    enabled: false
+    twilio:
+      account-sid: ""
+      auth-token: ""
+      from-number: ""
+      to-numbers: ""
+  rate-limit:
+    enabled: true
+    capacity: 100
+    refill-tokens: 10
+    refill-duration: 1
