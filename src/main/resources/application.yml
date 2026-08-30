@@ -1,37 +1,41 @@
-server:
-  port: 8080
-
+# PostgreSQL profile (activate with: -Dspring.profiles.active=prod)
 spring:
   datasource:
-    url: jdbc:h2:mem:cropdryer;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    username: sa
-    password: ""
+    url: ${JDBC_DATABASE_URL:jdbc:postgresql://localhost:5432/cropdryer}
+    username: ${JDBC_DATABASE_USERNAME:postgres}
+    password: ${JDBC_DATABASE_PASSWORD:postgres}
+
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: create
     show-sql: true
     properties:
       hibernate:
-        format_sql: true
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
 
 cropdryer:
   cors:
-    allowed-origins: "http://localhost:3000,http://localhost:5173"
+    allowed-origins: ${CROPDRYER_CORS_ALLOWED_ORIGINS:https://your-frontend-domain.com}
   api:
-    key: ""
+    key: ${CROPDRYER_API_KEY:}
   sms:
-    enabled: false
-    twilio:
-      account-sid: ""
-      auth-token: ""
-      from-number: ""
-      to-numbers: ""
+    enabled: ${CROPDRYER_SMS_ENABLED}
+    arkesel:
+      api-key: ${CROPDRYER_SMS_ARKESEL_API_KEY:}
+      sender-id: ${CROPDRYER_SMS_ARKESEL_SENDER_ID:CropDryer}
+      to-numbers: ${CROPDRYER_SMS_ARKESEL_TO_NUMBERS:}
   rate-limit:
     enabled: true
-    capacity: 100
-    refill-tokens: 10
-    refill-duration: 1
+    capacity: ${RATE_LIMIT_CAPACITY:100}
+    refill-tokens: ${RATE_LIMIT_REFILL_TOKENS:10}
+    refill-duration: ${RATE_LIMIT_REFILL_DURATION:1}

@@ -20,21 +20,41 @@ public class ReadingService {
     private final SmsService smsService;
 
     public Reading saveFromRequest(ReadingRequest req) {
+        System.out.println("=== ARDUINO READING RECEIVED ===");
+        System.out.println("Temperature: " + req.getTemperature());
+        System.out.println("Humidity: " + req.getHumidity());
+        System.out.println("Water: " + req.getWater());
+        System.out.println("Fan On: " + req.getFanOn());
+        System.out.println("Rain: " + req.getRain());
+        System.out.println("Rain Status: " + req.getRainStatus());
+        System.out.println("Alarm: " + req.getAlarm());
+        System.out.println("Device ID: " + req.getDeviceId());
+        System.out.println("================================");
+        
         Reading r = new Reading();
         r.setTemperature(req.getTemperature());
         r.setHumidity(req.getHumidity());
         r.setWater(req.getWater());
         r.setFanOn(req.getFanOn());
         r.setRain(req.getRain());
-        r.setRainStatus(req.getRainStatus() == null ? null : req.getRainStatus().toUpperCase());
+        
+        // Calculate rain status from sensor value if not provided
+        String calculatedRainStatus = calculateRainStatus(req.getRain());
+        r.setRainStatus(req.getRainStatus() != null ? req.getRainStatus().toUpperCase() : calculatedRainStatus);
+        
         r.setAlarm(req.getAlarm() == null ? null : req.getAlarm().toUpperCase());
         r.setDeviceId(req.getDeviceId());
         Reading saved = repository.save(r);
         
         // Send SMS alert if alarm is WARN or HIGH, or if it's raining
         boolean isRaining = "RAIN".equals(saved.getRainStatus()) || "HEAVY".equals(saved.getRainStatus());
-        if ("WARN".equals(saved.getAlarm()) || "HIGH".equals(saved.getAlarm()) || isRaining) {
+        boolean shouldSendSms = "WARN".equals(saved.getAlarm()) || "HIGH".equals(saved.getAlarm()) || isRaining;
+        
+        if (shouldSendSms) {
+            System.out.println("SMS ALERT TRIGGERED - Alarm: " + saved.getAlarm() + ", Rain: " + saved.getRainStatus());
             smsService.sendAlert(saved);
+        } else {
+            System.out.println("SMS NOT TRIGGERED - Alarm: " + saved.getAlarm() + ", Rain: " + saved.getRainStatus());
         }
         
         return saved;
@@ -59,5 +79,20 @@ public class ReadingService {
         return (deviceId == null || deviceId.isBlank())
                 ? repository.findByAlarmInOrderByCreatedAtDesc(alarms)
                 : repository.findByAlarmInAndDeviceIdOrderByCreatedAtDesc(alarms, deviceId);
+    }
+
+    private String calculateRainStatus(Integer rainValue) {
+        if (rainValue == null) {
+            return "DRY";
+        }
+        // Rain sensor typically returns lower values when dry, higher when wet
+        // Thresholds may need adjustment based on sensor calibration
+        if (rainValue < 500) {
+            return "DRY";
+        } else if (rainValue < 800) {
+            return "RAIN";
+        } else {
+            return "HEAVY";
+        }
     }
 }
